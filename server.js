@@ -1,5 +1,7 @@
-const dns = require("dns");
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+// Only needed on a laptop with DNS issues; skipped on Vercel
+if (!process.env.VERCEL) {
+  require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
+}
 
 require("dotenv").config();
 const express = require("express");
@@ -8,10 +10,19 @@ const mongoose = require("mongoose");
 
 const app = express();
 
-// Allowed frontend URLs (comma separated in CLIENT_URL)
-const allowed = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",")
-  .map((u) => u.trim().replace(/\/$/, ""));
+// Allowed frontend URLs
+const clean = (u) => u.trim().replace(/\/$/, "");
+const allowed = [
+  ...(process.env.CLIENT_URL || "").split(","),
+  "https://authentication-frontend-kappa.vercel.app",
+]
+  .map(clean)
+  .filter(Boolean);
+
+// localhost is allowed only while developing, never in production
+if (process.env.NODE_ENV !== "production") {
+  allowed.push("http://localhost:5173", "http://localhost:5174");
+}
 
 app.use(cors({ origin: allowed }));
 app.use(express.json());
